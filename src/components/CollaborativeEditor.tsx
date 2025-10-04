@@ -1,24 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDocument } from '@/contexts/DocumentContext';
 import { useAuth } from '@/contexts/AuthContext';
+import RichTextEditor from './RichTextEditor';
 
 export default function CollaborativeEditor() {
   const { currentDocument, updateDocument, presence, updatePresence } = useDocument();
   const { user } = useAuth();
-  const [content, setContent] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
 
-  useEffect(() => {
-    if (currentDocument) {
-      setContent(currentDocument.content || '');
-    }
-  }, [currentDocument?.id]);
-
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value;
-    setContent(newContent);
-
+  const handleContentChange = (htmlContent: string, jsonContent: any) => {
     // Clear previous timeout
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
@@ -26,32 +16,26 @@ export default function CollaborativeEditor() {
 
     // Debounce database update
     updateTimeoutRef.current = setTimeout(() => {
-      updateDocument({ content: newContent });
+      updateDocument({ 
+        content: htmlContent, 
+        content_delta: jsonContent 
+      });
     }, 500);
-
-    // Update cursor position immediately
-    if (textareaRef.current) {
-      updatePresence(textareaRef.current.selectionStart);
-    }
   };
 
-  const handleCursorMove = () => {
-    if (textareaRef.current) {
-      updatePresence(textareaRef.current.selectionStart);
-    }
+  const handleCursorChange = (position: number) => {
+    updatePresence(position);
   };
 
   return (
-    <div className="relative bg-white min-h-[500px] px-6 py-4">
-      <textarea
-        ref={textareaRef}
-        value={content}
+    <div className="relative bg-white min-h-[500px] p-4">
+      <RichTextEditor
+        content={currentDocument?.content}
+        contentDelta={currentDocument?.content_delta}
         onChange={handleContentChange}
-        onKeyUp={handleCursorMove}
-        onClick={handleCursorMove}
+        onCursorChange={handleCursorChange}
         placeholder="Start typing your email... Your team can see changes in real-time."
-        className="w-full min-h-[450px] text-gray-800 text-base leading-relaxed focus:outline-none resize-none font-serif"
-        style={{ fontFamily: 'Georgia, serif' }}
+        className="mb-4"
       />
       
       {/* Live cursor indicators */}

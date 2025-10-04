@@ -1,11 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Initialize Supabase client with environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Initialize Supabase client
-// Using direct values from project configuration
-const supabaseUrl = 'https://iwagvefnbitotrsggthy.supabase.co';
-const supabaseKey = 'sb_publishable_qyI6vf25kNHISEuS1ha1PA_1Z-3k6ZE';
-const supabase = createClient(supabaseUrl, supabaseKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
 
 export { supabase };
